@@ -142,6 +142,9 @@ body{font-family:var(--font-sans,'Segoe UI',system-ui,sans-serif);font-size:14px
 .empty svg{width:32px;height:32px;margin-bottom:10px;opacity:.35;color:var(--accent);display:block;margin-inline:auto}
 /* load-more sentinel */
 #load-more{height:1px;width:100%}
+/* pin badge on card */
+.bk .pin-badge{position:absolute;top:8px;left:8px;width:16px;height:16px;color:var(--accent);opacity:.85;pointer-events:none}
+.ab.pin-on{color:var(--accent);border-color:rgba(152,181,244,.4);background:rgba(152,181,244,.12)}
 
 /* Detail overlay */
 #ov-bg{position:fixed;inset:0;z-index:200;background:rgba(17,17,27,0);display:flex;align-items:center;justify-content:center;pointer-events:none;transition:background calc(.25s/var(--spd)) var(--ease-ui),backdrop-filter calc(.3s/var(--spd)) var(--ease-ui),-webkit-backdrop-filter calc(.3s/var(--spd)) var(--ease-ui);backdrop-filter:blur(0px);-webkit-backdrop-filter:blur(0px)}
@@ -211,6 +214,9 @@ body{font-family:var(--font-sans,'Segoe UI',system-ui,sans-serif);font-size:14px
 .ctx-item.danger:hover{background:rgba(243,139,168,.08);color:var(--red)}
 .ctx-item svg{width:14px;height:14px;flex-shrink:0}
 .ctx-sep{height:1px;background:var(--s0);margin:3px 6px}
+/* folder drag-and-drop */
+.ft-row.drag-over{background:rgba(152,181,244,.18);outline:2px dashed var(--accent);outline-offset:-2px}
+.ft-row.dragging{opacity:.4}
 
 /* Inline edit panel */
 #ie-panel{position:fixed;z-index:250;background:var(--mantle);border:1px solid var(--s1);border-radius:14px;padding:22px 24px;width:460px;max-width:calc(100vw - 32px);box-shadow:0 20px 60px rgba(0,0,0,.5);display:none}
@@ -422,8 +428,6 @@ body{font-family:var(--font-sans,'Segoe UI',system-ui,sans-serif);font-size:14px
         <select id="ease-sel" style="padding:6px 9px;border-radius:8px;border:1px solid var(--s1);background:var(--s0);color:var(--tx);font-size:12px;font-family:inherit;outline:none;cursor:pointer" onchange="onEaseChange(this.value)">
           <option value="smooth">Smooth (default)</option>
           <option value="snappy">Snappy</option>
-          <option value="ease-in">Ease in</option>
-          <option value="ease-out">Ease out</option>
           <option value="linear">Linear</option>
         </select>
       </div>
@@ -434,6 +438,7 @@ body{font-family:var(--font-sans,'Segoe UI',system-ui,sans-serif);font-size:14px
       <h4>Click behavior</h4>
       <div class="prow"><div><div class="plabel">Single click opens site</div><div class="pdesc">Skip detail panel</div></div><button class="tog" id="tog-click" onclick="togglePref('singleClick',this)"></button></div>
       <div class="prow"><div><div class="plabel">Show quick open button</div><div class="pdesc">Direct link icon on card hover</div></div><button class="tog" id="tog-qo" onclick="togglePref('showQO',this)"></button></div>
+      <div class="prow"><div><div class="plabel">Show pin button on cards</div><div class="pdesc">Pin icon alongside edit &amp; delete</div></div><button class="tog" id="tog-pin" onclick="togglePref('showPin',this)"></button></div>
     </div>
     <div class="psec" id="pref-acct-sec">
       <h4>Account &amp; Sync</h4>
@@ -473,7 +478,9 @@ body{font-family:var(--font-sans,'Segoe UI',system-ui,sans-serif);font-size:14px
 
 <!-- Context menu -->
 <div id="ctx-menu">
+  <div class="ctx-item" onclick="ctxNewFolder()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>New subfolder</div>
   <div class="ctx-item" onclick="ctxRename()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Rename folder</div>
+  <div class="ctx-item" onclick="ctxExport()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Export folder</div>
   <div class="ctx-sep"></div>
   <div class="ctx-item danger" onclick="ctxDelete()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>Delete folder</div>
 </div>
@@ -486,6 +493,7 @@ body{font-family:var(--font-sans,'Segoe UI',system-ui,sans-serif);font-size:14px
   <div class="field"><label>Folder</label><div class="fd-wrap"><div class="fd-btn" id="ie-fd-btn" onclick="toggleFD('ie')"><span class="fd-label ph" id="ie-fd-label">No folder</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div><div class="fd-dd" id="ie-fd-dd"></div></div></div>
   <div class="field"><label>Tags</label><input id="ie-tags" placeholder="design, tools, reference"></div>
   <div class="field"><label>Notes</label><textarea id="ie-notes" style="min-height:56px" placeholder="Optional notes…"></textarea></div>
+  <div class="prow" style="margin-bottom:0;margin-top:2px"><div><div class="plabel">Pin to top</div><div class="pdesc" style="font-size:11px;color:var(--ov1)">Always show at top of list</div></div><button class="tog" id="ie-tog-pin" onclick="this.classList.toggle('on')"></button></div>
   <div class="mfooter" style="margin-top:14px;padding-top:12px"><button class="btn" onclick="closeIE()">Cancel</button><button class="btn pri" onclick="saveIE()">Save</button></div>
 </div>
 
@@ -599,7 +607,7 @@ const LI=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-widt
 
 const PAGE=40; /* virtual scroll page size */
 let bookmarks=[],folders=[],editId=null,view='all',activeTag=null,dm='grid',sortVal='newest',sbOpen=true,folderOpen={};
-let prefs={singleClick:false,showQO:false,cols:3,bgColor:'#1E1E2D',acColor:'#98B5F4',animSpeed:1,easeStyle:'smooth',reduceMotion:false,blurEnabled:false};
+let prefs={singleClick:false,showQO:false,showPin:false,cols:3,bgColor:'#1E1E2D',acColor:'#98B5F4',animSpeed:1,easeStyle:'smooth',reduceMotion:false,blurEnabled:false};
 let ctxFid=null,ieId=null,ieCardRect=null,fdSel={modal:null,ie:null},longTmr=null;
 let currentUser=null,sbClient=null;
 /* virtual scroll state */
@@ -655,8 +663,6 @@ function applyPrefs(){
   const easings={
     smooth:['cubic-bezier(.4,0,.2,1)','cubic-bezier(.2,.8,.4,1)','cubic-bezier(.4,0,1,1)','cubic-bezier(.2,.8,.4,1)'],
     snappy:['cubic-bezier(.4,0,.2,1)','cubic-bezier(.15,.75,.4,1)','cubic-bezier(.4,0,1,1)','cubic-bezier(.15,.75,.4,1)'],
-    'ease-in':['ease-in','ease-in','ease-in','ease-in'],
-    'ease-out':['ease-out','ease-out','ease-out','ease-out'],
     linear:['linear','linear','linear','linear'],
   };
   const e=easings[prefs.easeStyle]||easings.smooth;
@@ -747,6 +753,34 @@ function buildTree(pid,depth,container){
     row.addEventListener('touchstart',e=>{longTmr=setTimeout(()=>{const t=e.touches[0];showCtx(t.clientX,t.clientY,f.id)},600)},{passive:true});
     row.addEventListener('touchend',()=>clearTimeout(longTmr));
     row.addEventListener('touchmove',()=>clearTimeout(longTmr));
+    /* drag-and-drop for folder reordering */
+    row.setAttribute('draggable','true');
+    row.dataset.fid=f.id;
+    row.addEventListener('dragstart',e=>{
+      e.dataTransfer.setData('text/plain',f.id);
+      e.dataTransfer.effectAllowed='move';
+      setTimeout(()=>row.classList.add('dragging'),0);
+    });
+    row.addEventListener('dragend',()=>row.classList.remove('dragging'));
+    row.addEventListener('dragover',e=>{
+      e.preventDefault();e.dataTransfer.dropEffect='move';
+      document.querySelectorAll('.ft-row.drag-over').forEach(r=>r.classList.remove('drag-over'));
+      row.classList.add('drag-over');
+    });
+    row.addEventListener('dragleave',e=>{if(!row.contains(e.relatedTarget))row.classList.remove('drag-over')});
+    row.addEventListener('drop',e=>{
+      e.preventDefault();row.classList.remove('drag-over');
+      const dragId=e.dataTransfer.getData('text/plain');
+      if(!dragId||dragId===f.id)return;
+      /* prevent dropping a folder into its own descendant */
+      if(belowIds(dragId).includes(f.id))return;
+      const dragged=folders.find(x=>x.id===dragId);
+      if(!dragged)return;
+      dragged.parentId=f.id;
+      folderOpen[f.id]=true;
+      save();render();
+    });
+    /* drop on sidebar root area (null parent) handled via #folder-tree element */
     wrap.appendChild(row);wrap.appendChild(kw);
   });
   container.appendChild(wrap);
@@ -810,6 +844,30 @@ function ctxDelete(){
   if(view==='folder:'+ctxFid)setView('all',document.getElementById('nav-all'));
   save();render();
 }
+function ctxNewFolder(){
+  if(!ctxFid)return;const f=folders.find(x=>x.id===ctxFid);hideCtx();
+  if(!f)return;const n=prompt('New subfolder name:');
+  if(!n||!n.trim())return;
+  folders.push({id:uid(),name:n.trim(),parentId:ctxFid});
+  folderOpen[ctxFid]=true;save();render();
+}
+function ctxExport(){
+  if(!ctxFid)return;const f=folders.find(x=>x.id===ctxFid);hideCtx();
+  if(!f)return;
+  function buildDLSub(pid,indent){
+    const pad=' '.repeat(indent);let html='';
+    childFolders(pid).forEach(sf=>{
+      html+=`${pad}<DT><H3>${sf.name}</H3>\n${pad}<DL><p>\n`;
+      html+=buildDLSub(sf.id,indent+4);
+      bookmarks.filter(b=>b.folder===sf.id).forEach(b=>{html+=`${pad}    <DT><A HREF="${b.url}" ADD_DATE="${Math.floor(b.added/1000)}"${b.tags?.length?' TAGS="'+b.tags.join(',')+'"':''}>${b.title}</A>\n`});
+      html+=`${pad}</DL><p>\n`;
+    });return html;
+  }
+  const pad='    ';let body=buildDLSub(ctxFid,8);
+  bookmarks.filter(b=>b.folder===ctxFid).forEach(b=>{body+=`${pad}    <DT><A HREF="${b.url}" ADD_DATE="${Math.floor(b.added/1000)}"${b.tags?.length?' TAGS="'+b.tags.join(',')+'"':''}>${b.title}</A>\n`});
+  const html=`<!DOCTYPE NETSCAPE-Bookmark-file-1>\n<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">\n<TITLE>Bookmarks - ${f.name}</TITLE>\n<H1>${f.name}</H1>\n<DL><p>\n${pad}<DT><H3>${f.name}</H3>\n${pad}<DL><p>\n${body}${pad}</DL><p>\n</DL><p>`;
+  const a=document.createElement('a');a.href='data:text/html;charset=utf-8,'+encodeURIComponent(html);a.download=`bookmarks-${f.name}.html`;a.click();
+}
 
 /* render - counts/tags/tree are cheap; cards use virtual scroll */
 function renderCounts(){
@@ -825,6 +883,22 @@ function renderTags(){
 function renderTree(){
   const el=document.getElementById('folder-tree');el.innerHTML='';
   buildTree(null,0,el);
+  /* root drop zone: drop onto the folder-tree container moves folder to top level */
+  el.addEventListener('dragover',e=>{
+    if(e.target===el||e.target.closest('#folder-tree')===el&&!e.target.closest('.ft-row')){
+      e.preventDefault();e.dataTransfer.dropEffect='move';
+    }
+  });
+  el.addEventListener('drop',e=>{
+    if(e.target.closest('.ft-row'))return;
+    e.preventDefault();
+    const dragId=e.dataTransfer.getData('text/plain');
+    if(!dragId)return;
+    const dragged=folders.find(x=>x.id===dragId);
+    if(!dragged)return;
+    dragged.parentId=null;
+    save();render();
+  });
   document.getElementById('dd-grid')?.classList.toggle('act',dm==='grid');
   document.getElementById('dd-list')?.classList.toggle('act',dm==='list');
 }
@@ -840,6 +914,8 @@ function getFiltered(){
   if(activeTag)list=list.filter(b=>(b.tags||[]).includes(activeTag));
   if(q)list=list.filter(b=>(b.title||'').toLowerCase().includes(q)||(b.url||'').toLowerCase().includes(q)||(b.notes||'').toLowerCase().includes(q)||(b.tags||[]).some(t=>t.toLowerCase().includes(q)));
   return list.sort((a,b)=>{
+    if(a.pinned&&!b.pinned)return -1;
+    if(!a.pinned&&b.pinned)return 1;
     if(sortVal==='newest')return b.added-a.added;
     if(sortVal==='oldest')return a.added-b.added;
     if(sortVal==='az')return(a.title||'').localeCompare(b.title||'');
@@ -864,6 +940,8 @@ function mkCard(b,animate){
   const fc=domn(b.url).charAt(0).toUpperCase()||'?';
   const tags=(b.tags||[]).map(t=>`<span class="ctag">${t}</span>`).join('');
   const qo=prefs.showQO?`<div class="ab qo" onclick="event.stopPropagation();window.open('${b.url}','_blank')" title="Open link">${LI}</div>`:'';
+  const pinBtn=prefs.showPin?`<div class="ab${b.pinned?' pin-on':''}" onclick="event.stopPropagation();togglePin('${b.id}')" title="${b.pinned?'Unpin':'Pin to top'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>`:'';
+  const pinBadge=b.pinned?`<svg class="pin-badge" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`:'';
   const d=document.createElement('div');
   d.className='bk'+(animate?' animate-in':'');
   d.dataset.id=b.id;
@@ -874,9 +952,9 @@ function mkCard(b,animate){
     openDetail(b.id);
   };
   if(dm==='list'){
-    d.innerHTML=`<div class="fav"><img src="${fav(b.url)}" loading="lazy" onerror="this.parentNode.textContent='${fc}'"></div><div class="info"><div class="ttl">${b.title||domn(b.url)}</div><div class="dom">${domn(b.url)}</div></div><div class="tags">${tags}</div><div class="acts">${qo}<div class="ab" onclick="event.stopPropagation();openIE('${b.id}')" title="Edit">${EI}</div><div class="ab" onclick="event.stopPropagation();delBk('${b.id}')" title="Delete">${DI}</div></div>`;
+    d.innerHTML=`<div class="fav"><img src="${fav(b.url)}" loading="lazy" onerror="this.parentNode.textContent='${fc}'"></div><div class="info"><div class="ttl">${b.title||domn(b.url)}</div><div class="dom">${domn(b.url)}</div></div><div class="tags">${tags}</div><div class="acts">${qo}${pinBtn}<div class="ab" onclick="event.stopPropagation();openIE('${b.id}')" title="Edit">${EI}</div><div class="ab" onclick="event.stopPropagation();delBk('${b.id}')" title="Delete">${DI}</div></div>`;
   }else{
-    d.innerHTML=`<div class="fav"><img src="${fav(b.url)}" loading="lazy" onerror="this.parentNode.textContent='${fc}'"></div><div class="ttl">${b.title||domn(b.url)}</div><div class="dom">${domn(b.url)}</div><div class="tags">${tags}</div><div class="acts">${qo}<div class="ab" onclick="event.stopPropagation();openIE('${b.id}')" title="Edit">${EI}</div><div class="ab" onclick="event.stopPropagation();delBk('${b.id}')" title="Delete">${DI}</div></div>`;
+    d.innerHTML=`${pinBadge}<div class="fav"><img src="${fav(b.url)}" loading="lazy" onerror="this.parentNode.textContent='${fc}'"></div><div class="ttl">${b.title||domn(b.url)}</div><div class="dom">${domn(b.url)}</div><div class="tags">${tags}</div><div class="acts">${qo}${pinBtn}<div class="ab" onclick="event.stopPropagation();openIE('${b.id}')" title="Edit">${EI}</div><div class="ab" onclick="event.stopPropagation();delBk('${b.id}')" title="Delete">${DI}</div></div>`;
   }
   return d;
 }
@@ -940,6 +1018,7 @@ function openIE(id){
   const fn=b.folder?folders.find(f=>f.id===b.folder):null;
   document.getElementById('ie-fd-label').textContent=fn?fn.name:'No folder';
   document.getElementById('ie-fd-label').className='fd-label'+(fn?'':' ph');
+  document.getElementById('ie-tog-pin').className='tog'+(b.pinned?' on':'');
   const card=document.querySelector(`.bk[data-id="${id}"]`);
   ieCardRect=card?card.getBoundingClientRect():null;
   const panel=document.getElementById('ie-panel');
@@ -983,6 +1062,7 @@ function saveIE(){
   b.folder=fdSel.ie||null;
   b.tags=document.getElementById('ie-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
   b.notes=document.getElementById('ie-notes').value.trim();
+  b.pinned=document.getElementById('ie-tog-pin').classList.contains('on');
   save();closeIE();render();
 }
 
@@ -1013,6 +1093,10 @@ function saveBookmark(){
 function delBk(id){
   if(!confirm('Delete this bookmark?'))return;
   bookmarks=bookmarks.filter(b=>b.id!==id);save();render();
+}
+function togglePin(id){
+  const b=bookmarks.find(x=>x.id===id);if(!b)return;
+  b.pinned=!b.pinned;save();render();
 }
 function deleteAll(){
   if(!confirm('Delete ALL bookmarks? This cannot be undone.'))return;
@@ -1094,10 +1178,11 @@ function openPref(){
   document.getElementById('ease-sel').value=prefs.easeStyle||'smooth';
   document.getElementById('tog-click').className='tog'+(prefs.singleClick?' on':'');
   document.getElementById('tog-qo').className='tog'+(prefs.showQO?' on':'');
+  document.getElementById('tog-pin').className='tog'+(prefs.showPin?' on':'');
   document.getElementById('tog-motion').className='tog'+(prefs.reduceMotion?' on':'');
   document.getElementById('tog-blur').className='tog'+(prefs.blurEnabled?' on':'');
   const ps=document.getElementById('presets');ps.innerHTML='';
-  [{name:'Mocha',bg:'#1E1E2D',ac:'#98B5F4'},{name:'Latte',bg:'#EFF1F5',ac:'#1E66F5'},{name:'Macchiato',bg:'#1E2030',ac:'#8AADF4'},{name:'Tokyo',bg:'#1a1b26',ac:'#7aa2f7'},{name:'Dracula',bg:'#282a36',ac:'#bd93f9'}].forEach(p=>{
+  [{name:'Mocha',bg:'#1E1E2D',ac:'#98B5F4'},{name:'Latte',bg:'#EFF1F5',ac:'#1E66F5'},{name:'Macchiato',bg:'#1E2030',ac:'#8AADF4'},{name:'Tokyo Night',bg:'#1a1b26',ac:'#7aa2f7'},{name:'Dracula',bg:'#282a36',ac:'#bd93f9'},{name:'Everforest',bg:'#2D353B',ac:'#A7C080'},{name:'Gruvbox',bg:'#282828',ac:'#FABD2F'},{name:'Rosé Pine',bg:'#191724',ac:'#EB6F92'},{name:'Nord',bg:'#2E3440',ac:'#88C0D0'},{name:'Solarized',bg:'#002B36',ac:'#2AA198'}].forEach(p=>{
     const s=document.createElement('div');
     s.style.cssText=`width:24px;height:24px;border-radius:6px;background:${p.bg};border:2px solid ${p.ac};cursor:pointer;transition:transform calc(.15s/var(--spd))`;
     s.title=p.name;s.onmouseenter=()=>s.style.transform='scale(1.15)';s.onmouseleave=()=>s.style.transform='';
