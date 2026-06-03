@@ -620,6 +620,75 @@ const domn=url=>{try{return new URL(url).hostname}catch{return ''}};
 const fav=url=>{try{return`https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=64`}catch{return ''}};
 const allTags=()=>{const s=new Set();bookmarks.forEach(b=>(b.tags||[]).forEach(t=>s.add(t)));return[...s].sort()};
 const childFolders=pid=>folders.filter(f=>f.parentId===(pid||null));
+
+/* ── shared utilities ── */
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModalById(id){document.getElementById(id).classList.remove('open')}
+function bookmarkLine(b,pad){
+  return`${pad}<DT><A HREF="${b.url}" ADD_DATE="${Math.floor(b.added/1000)}"${b.tags?.length?' TAGS="'+b.tags.join(',')+'"':''}>${b.title}</A>\n`;
+}
+function buildBookmarkDL(pid,indent){
+  const pad=' '.repeat(indent);let html='';
+  childFolders(pid).forEach(f=>{
+    html+=`${pad}<DT><H3>${f.name}</H3>\n${pad}<DL><p>\n`;
+    html+=buildBookmarkDL(f.id,indent+4);
+    bookmarks.filter(b=>b.folder===f.id).forEach(b=>{html+=bookmarkLine(b,pad+'    ')});
+    html+=`${pad}</DL><p>\n`;
+  });return html;
+}
+function loadSavedAcctFields(prefix){
+  try{
+    const a=localStorage.getItem('bk8acct');
+    if(!a)return;
+    const p=JSON.parse(a);
+    if(p.url)document.getElementById(prefix+'-url').value=p.url;
+    if(p.key)document.getElementById(prefix+'-key').value=p.key;
+    if(p.email)document.getElementById(prefix+'-email').value=p.email;
+  }catch(e){}
+}
+function _getAuthFields(prefix){
+  return{
+    url:document.getElementById(prefix+'-url').value.trim(),
+    key:document.getElementById(prefix+'-key').value.trim(),
+    email:document.getElementById(prefix+'-email').value.trim(),
+    pass:document.getElementById(prefix+'-pass').value,
+    err:document.getElementById(prefix+'-err')
+  };
+}
+async function _doSignIn(prefix){
+  const{url,key,email,pass,err}=_getAuthFields(prefix);
+  if(!url||!key){err.textContent='Enter Supabase URL and key.';err.style.color='var(--red)';return}
+  if(!email||!pass){err.textContent='Enter email and password.';err.style.color='var(--red)';return}
+  err.textContent='Connecting…';err.style.color='var(--ov1)';
+  try{
+    await initSB(url,key);
+    const{data,error}=await sbClient.auth.signInWithPassword({email,password:pass});
+    if(error){err.textContent=error.message;err.style.color='var(--red)';return}
+    localStorage.setItem('bk8acct',JSON.stringify({url,key,email}));
+    showLoggedIn(data.user);err.textContent='';syncPrefAcctUI();
+    await syncPull();
+  }catch(e){err.textContent='Failed: '+e.message;err.style.color='var(--red)'}
+}
+async function _doSignUp(prefix){
+  const{url,key,email,pass,err}=_getAuthFields(prefix);
+  if(!url||!key||!email||!pass){err.textContent='Fill in all fields.';err.style.color='var(--red)';return}
+  err.textContent='Creating account…';err.style.color='var(--ov1)';
+  try{
+    await initSB(url,key);
+    const{error}=await sbClient.auth.signUp({email,password:pass});
+    if(error){err.textContent=error.message;err.style.color='var(--red)';return}
+    err.textContent='Account created! You can now sign in.';err.style.color='var(--grn)';
+  }catch(e){err.textContent='Error: '+e.message;err.style.color='var(--red)'}
+}
+async function _doSignOut(){
+  if(sbClient)try{await sbClient.auth.signOut()}catch(e){}
+  localStorage.removeItem('bk8acct');
+  showLoggedOut();syncPrefAcctUI();
+}
+function updateColorPref(type,val){
+  if(type==='bg')prefs.bgColor=val;else prefs.acColor=val;
+  syncColorUI(type,val);applyPrefs();save();
+}
 function belowIds(fid){let ids=[];childFolders(fid).forEach(c=>{ids.push(c.id);ids=ids.concat(belowIds(c.id))});return ids}
 function cntBelow(fid){const ids=[fid,...belowIds(fid)];return bookmarks.filter(b=>ids.includes(b.folder)).length}
 
@@ -856,17 +925,8 @@ function ctxNewFolder(){
 function ctxExport(){
   if(!ctxFid)return;const fid=ctxFid;const f=folders.find(x=>x.id===fid);hideCtx();
   if(!f)return;
-  function buildDLSub(pid,indent){
-    const pad=' '.repeat(indent);let html='';
-    childFolders(pid).forEach(sf=>{
-      html+=`${pad}<DT><H3>${sf.name}</H3>\n${pad}<DL><p>\n`;
-      html+=buildDLSub(sf.id,indent+4);
-      bookmarks.filter(b=>b.folder===sf.id).forEach(b=>{html+=`${pad}    <DT><A HREF="${b.url}" ADD_DATE="${Math.floor(b.added/1000)}"${b.tags?.length?' TAGS="'+b.tags.join(',')+'"':''}>${b.title}</A>\n`});
-      html+=`${pad}</DL><p>\n`;
-    });return html;
-  }
-  const pad='    ';let body=buildDLSub(fid,8);
-  bookmarks.filter(b=>b.folder===fid).forEach(b=>{body+=`${pad}    <DT><A HREF="${b.url}" ADD_DATE="${Math.floor(b.added/1000)}"${b.tags?.length?' TAGS="'+b.tags.join(',')+'"':''}>${b.title}</A>\n`});
+  const pad='    ';let body=buildBookmarkDL(fid,8);
+  bookmarks.filter(b=>b.folder===fid).forEach(b=>{body+=bookmarkLine(b,pad+'    ')});
   const html=`<!DOCTYPE NETSCAPE-Bookmark-file-1>\n<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">\n<TITLE>Bookmarks - ${f.name}</TITLE>\n<H1>${f.name}</H1>\n<DL><p>\n${pad}<DT><H3>${f.name}</H3>\n${pad}<DL><p>\n${body}${pad}</DL><p>\n</DL><p>`;
   const a=document.createElement('a');a.href='data:text/html;charset=utf-8,'+encodeURIComponent(html);a.download=`bookmarks-${f.name}.html`;a.click();
 }
@@ -1076,9 +1136,9 @@ function openAdd(){
   fdSel.modal=null;
   document.getElementById('modal-fd-label').textContent='No folder';
   document.getElementById('modal-fd-label').className='fd-label ph';
-  document.getElementById('modal-bg').classList.add('open');
+  openModal('modal-bg');
 }
-function closeModal(){document.getElementById('modal-bg').classList.remove('open')}
+function closeModal(){closeModalById('modal-bg')}
 function saveBookmark(){
   const url=document.getElementById('f-url').value.trim();if(!url){document.getElementById('f-url').focus();return}
   const title=document.getElementById('f-title').value.trim();
@@ -1110,8 +1170,8 @@ function addFolder(){
 }
 
 /* import/export */
-function openImport(){document.getElementById('imp-status').textContent='';document.getElementById('import-bg').classList.add('open')}
-function closeImport(){document.getElementById('import-bg').classList.remove('open')}
+function openImport(){document.getElementById('imp-status').textContent='';openModal('import-bg')}
+function closeImport(){closeModalById('import-bg')}
 function handleDrop(e){e.preventDefault();document.getElementById('iz').classList.remove('drag');const f=e.dataTransfer.files[0];if(f)handleFile(f)}
 function handleFile(file){
   if(!file)return;
@@ -1159,29 +1219,22 @@ function handleFile(file){
   reader.readAsText(file);
 }
 function exportHTML(){
-  function buildDL(pid,indent){
-    const pad=' '.repeat(indent);let html='';
-    childFolders(pid).forEach(f=>{
-      html+=`${pad}<DT><H3>${f.name}</H3>\n${pad}<DL><p>\n`;
-      html+=buildDL(f.id,indent+4);
-      bookmarks.filter(b=>b.folder===f.id).forEach(b=>{html+=`${pad}    <DT><A HREF="${b.url}" ADD_DATE="${Math.floor(b.added/1000)}"${b.tags?.length?' TAGS="'+b.tags.join(',')+'"':''}>${b.title}</A>\n`});
-      html+=`${pad}</DL><p>\n`;
-    });return html;
-  }
-  let body=buildDL(null,4);
-  bookmarks.filter(b=>!b.folder).forEach(b=>{body+=`    <DT><A HREF="${b.url}" ADD_DATE="${Math.floor(b.added/1000)}"${b.tags?.length?' TAGS="'+b.tags.join(',')+'"':''}>${b.title}</A>\n`});
+  let body=buildBookmarkDL(null,4);
+  bookmarks.filter(b=>!b.folder).forEach(b=>{body+=bookmarkLine(b,'    ')});
   const html=`<!DOCTYPE NETSCAPE-Bookmark-file-1>\n<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">\n<TITLE>Bookmarks</TITLE>\n<H1>Bookmarks</H1>\n<DL><p>\n${body}</DL><p>`;
   const a=document.createElement('a');a.href='data:text/html;charset=utf-8,'+encodeURIComponent(html);a.download='bookmarks.html';a.click();
 }
 
 /* prefs */
+function syncColorUI(type,val){
+  const ids=type==='bg'?['hex-bg','cp-bg','prev-bg']:['hex-ac','cp-ac','prev-ac'];
+  document.getElementById(ids[0]).value=val;
+  document.getElementById(ids[1]).value=val;
+  document.getElementById(ids[2]).style.background=val;
+}
 function openPref(){
-  document.getElementById('hex-bg').value=prefs.bgColor;
-  document.getElementById('hex-ac').value=prefs.acColor;
-  document.getElementById('cp-bg').value=prefs.bgColor;
-  document.getElementById('cp-ac').value=prefs.acColor;
-  document.getElementById('prev-bg').style.background=prefs.bgColor;
-  document.getElementById('prev-ac').style.background=prefs.acColor;
+  syncColorUI('bg',prefs.bgColor);
+  syncColorUI('ac',prefs.acColor);
   document.getElementById('col-sl').value=prefs.cols;
   document.getElementById('col-val').textContent=prefs.cols;
   document.getElementById('spd-sl').value=prefs.animSpeed;
@@ -1197,22 +1250,16 @@ function openPref(){
     const s=document.createElement('div');
     s.style.cssText=`width:24px;height:24px;border-radius:6px;background:${p.bg};border:2px solid ${p.ac};cursor:pointer;transition:transform calc(.15s/var(--spd))`;
     s.title=p.name;s.onmouseenter=()=>s.style.transform='scale(1.15)';s.onmouseleave=()=>s.style.transform='';
-    s.onclick=()=>{prefs.bgColor=p.bg;prefs.acColor=p.ac;document.getElementById('hex-bg').value=p.bg;document.getElementById('hex-ac').value=p.ac;document.getElementById('cp-bg').value=p.bg;document.getElementById('cp-ac').value=p.ac;document.getElementById('prev-bg').style.background=p.bg;document.getElementById('prev-ac').style.background=p.ac;applyPrefs();save()};
+    s.onclick=()=>{updateColorPref('bg',p.bg);updateColorPref('ac',p.ac)};
     ps.appendChild(s);
   });
-  document.getElementById('pref-bg').classList.add('open');
+  openModal('pref-bg');
 }
-function closePref(){document.getElementById('pref-bg').classList.remove('open')}
-function onColorInput(type,val){
-  if(type==='bg'){prefs.bgColor=val;document.getElementById('hex-bg').value=val;document.getElementById('prev-bg').style.background=val}
-  else{prefs.acColor=val;document.getElementById('hex-ac').value=val;document.getElementById('prev-ac').style.background=val}
-  applyPrefs();save();
-}
+function closePref(){closeModalById('pref-bg')}
+function onColorInput(type,val){updateColorPref(type,val)}
 function onHexInput(type,val){
   if(!val.startsWith('#'))val='#'+val;if(!validHex(val))return;
-  if(type==='bg'){prefs.bgColor=val;document.getElementById('cp-bg').value=val;document.getElementById('prev-bg').style.background=val}
-  else{prefs.acColor=val;document.getElementById('cp-ac').value=val;document.getElementById('prev-ac').style.background=val}
-  applyPrefs();save();
+  updateColorPref(type,val);
 }
 function onColChange(v){prefs.cols=parseInt(v);document.getElementById('col-val').textContent=v;applyPrefs();save()}
 function onSpdChange(v){prefs.animSpeed=parseFloat(v);document.getElementById('spd-val').textContent=v+'×';applyPrefs();save()}
@@ -1264,46 +1311,14 @@ function openAcct(){
   else{
     document.getElementById('acct-login').style.display='block';
     document.getElementById('acct-loggedin').style.display='none';
-    try{const a=localStorage.getItem('bk8acct');if(a){const p=JSON.parse(a);if(p.url)document.getElementById('acct-url').value=p.url;if(p.key)document.getElementById('acct-key').value=p.key;if(p.email)document.getElementById('acct-email').value=p.email}}catch(e){}
+    loadSavedAcctFields('acct');
   }
-  document.getElementById('acct-bg').classList.add('open');
+  openModal('acct-bg');
 }
-function closeAcct(){document.getElementById('acct-bg').classList.remove('open')}
-async function acctSignIn(){
-  const url=document.getElementById('acct-url').value.trim(),key=document.getElementById('acct-key').value.trim();
-  const email=document.getElementById('acct-email').value.trim(),pass=document.getElementById('acct-pass').value;
-  const err=document.getElementById('acct-err');
-  if(!url||!key){err.textContent='Enter Supabase URL and key.';err.style.color='var(--red)';return}
-  if(!email||!pass){err.textContent='Enter email and password.';err.style.color='var(--red)';return}
-  err.textContent='Connecting…';err.style.color='var(--ov1)';
-  try{
-    await initSB(url,key);
-    const {data,error}=await sbClient.auth.signInWithPassword({email,password:pass});
-    if(error){err.textContent=error.message;err.style.color='var(--red)';return}
-    localStorage.setItem('bk8acct',JSON.stringify({url,key,email}));
-    showLoggedIn(data.user);err.textContent='';
-    syncPrefAcctUI();
-    await syncPull();
-  }catch(e){err.textContent='Failed: '+e.message;err.style.color='var(--red)'}
-}
-async function acctSignUp(){
-  const url=document.getElementById('acct-url').value.trim(),key=document.getElementById('acct-key').value.trim();
-  const email=document.getElementById('acct-email').value.trim(),pass=document.getElementById('acct-pass').value;
-  const err=document.getElementById('acct-err');
-  if(!url||!key||!email||!pass){err.textContent='Fill in all fields.';err.style.color='var(--red)';return}
-  err.textContent='Creating account…';err.style.color='var(--ov1)';
-  try{
-    await initSB(url,key);
-    const {error}=await sbClient.auth.signUp({email,password:pass});
-    if(error){err.textContent=error.message;err.style.color='var(--red)';return}
-    err.textContent='Account created! You can now sign in.';err.style.color='var(--grn)';
-  }catch(e){err.textContent='Error: '+e.message;err.style.color='var(--red)'}
-}
-async function acctSignOut(){
-  if(sbClient)try{await sbClient.auth.signOut()}catch(e){}
-  localStorage.removeItem('bk8acct');
-  showLoggedOut();syncPrefAcctUI();closeAcct();
-}
+function closeAcct(){closeModalById('acct-bg')}
+async function acctSignIn(){return _doSignIn('acct')}
+async function acctSignUp(){return _doSignUp('acct')}
+async function acctSignOut(){await _doSignOut();closeAcct()}
 async function syncPush(){
   if(!sbClient||!currentUser){setSyncSt('Not signed in.');return}
   setSyncSt('Pushing…');
@@ -1345,46 +1360,15 @@ function syncPrefAcctUI(){
     loggedout.style.display='none';loggedin.style.display='block';
   }else{
     loggedout.style.display='block';loggedin.style.display='none';
-    try{const a=localStorage.getItem('bk8acct');if(a){const p=JSON.parse(a);if(p.url)document.getElementById('pref-acct-url').value=p.url;if(p.key)document.getElementById('pref-acct-key').value=p.key;if(p.email)document.getElementById('pref-acct-email').value=p.email}}catch(e){}
+    loadSavedAcctFields('pref-acct');
   }
 }
-async function prefAcctSignIn(){
-  const url=document.getElementById('pref-acct-url').value.trim(),key=document.getElementById('pref-acct-key').value.trim();
-  const email=document.getElementById('pref-acct-email').value.trim(),pass=document.getElementById('pref-acct-pass').value;
-  const err=document.getElementById('pref-acct-err');
-  if(!url||!key){err.textContent='Enter Supabase URL and key.';err.style.color='var(--red)';return}
-  if(!email||!pass){err.textContent='Enter email and password.';err.style.color='var(--red)';return}
-  err.textContent='Connecting…';err.style.color='var(--ov1)';
-  try{
-    await initSB(url,key);
-    const {data,error}=await sbClient.auth.signInWithPassword({email,password:pass});
-    if(error){err.textContent=error.message;err.style.color='var(--red)';return}
-    localStorage.setItem('bk8acct',JSON.stringify({url,key,email}));
-    showLoggedIn(data.user);err.textContent='';syncPrefAcctUI();
-    await syncPull();
-  }catch(e){err.textContent='Failed: '+e.message;err.style.color='var(--red)'}
-}
-async function prefAcctSignUp(){
-  const url=document.getElementById('pref-acct-url').value.trim(),key=document.getElementById('pref-acct-key').value.trim();
-  const email=document.getElementById('pref-acct-email').value.trim(),pass=document.getElementById('pref-acct-pass').value;
-  const err=document.getElementById('pref-acct-err');
-  if(!url||!key||!email||!pass){err.textContent='Fill in all fields.';err.style.color='var(--red)';return}
-  err.textContent='Creating account…';err.style.color='var(--ov1)';
-  try{
-    await initSB(url,key);
-    const {error}=await sbClient.auth.signUp({email,password:pass});
-    if(error){err.textContent=error.message;err.style.color='var(--red)';return}
-    err.textContent='Account created! You can now sign in.';err.style.color='var(--grn)';
-  }catch(e){err.textContent='Error: '+e.message;err.style.color='var(--red)'}
-}
-async function prefAcctSignOut(){
-  if(sbClient)try{await sbClient.auth.signOut()}catch(e){}
-  localStorage.removeItem('bk8acct');
-  showLoggedOut();syncPrefAcctUI();
-}
+async function prefAcctSignIn(){return _doSignIn('pref-acct')}
+async function prefAcctSignUp(){return _doSignUp('pref-acct')}
+async function prefAcctSignOut(){await _doSignOut()}
 
-function openHelp(){closeAcct();document.getElementById('help-bg').classList.add('open')}
-function closeHelp(){document.getElementById('help-bg').classList.remove('open')}
+function openHelp(){closeAcct();openModal('help-bg')}
+function closeHelp(){closeModalById('help-bg')}
 
 /* global */
 document.addEventListener('keydown',e=>{
