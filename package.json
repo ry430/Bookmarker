@@ -1,0 +1,13 @@
+{
+  "name": "bookmarker",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "jest --verbose",
+    "test:coverage": "jest --coverage"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jsdom": "^25.0.1"
+  }
+}
