@@ -583,8 +583,11 @@ let vsPage=1,vsObs=null,vsFiltered=[];
 
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2);
 const domn=url=>{try{return new URL(url).hostname}catch{return ''}};
-const fav=url=>{try{return`https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=64`}catch{return ''}};
+const fav=url=>{try{return`https://www.google.com/s2/favicons?domain=${encodeURIComponent(new URL(url).hostname)}&sz=64`}catch{return ''}};
 const allTags=()=>{const s=new Set();bookmarks.forEach(b=>(b.tags||[]).forEach(t=>s.add(t)));return[...s].sort()};
+function esc(s){if(!s)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;').replace(/'/g,'&#39;')}
+function safeURL(url){try{const p=new URL(url).protocol;return p==='http:'||p==='https:'||p==='ftp:'}catch{return false}}
+function safeOpen(url){if(safeURL(url))window.open(url,'_blank');else alert('Blocked: unsafe URL scheme.')}
 const childFolders=pid=>folders.filter(f=>f.parentId===(pid||null));
 function belowIds(fid){let ids=[];childFolders(fid).forEach(c=>{ids.push(c.id);ids=ids.concat(belowIds(c.id))});return ids}
 function cntBelow(fid){const ids=[fid,...belowIds(fid)];return bookmarks.filter(b=>ids.includes(b.folder)).length}
@@ -694,7 +697,7 @@ function buildTree(pid,depth,container){
     const isOpen=!!folderOpen[f.id];
     const row=document.createElement('div');
     row.className='ft-row'+(view==='folder:'+f.id?' act':'');
-    row.innerHTML=`<div class="ft-chev${isOpen?' open':''}">${hasKids?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>':''}</div><div class="ft-body">${FI}<span class="fname">${f.name}</span><span class="ct">${cntBelow(f.id)}</span></div>`;
+    row.innerHTML=`<div class="ft-chev${isOpen?' open':''}">${hasKids?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>':''}</div><div class="ft-body">${FI}<span class="fname">${esc(f.name)}</span><span class="ct">${cntBelow(f.id)}</span></div>`;
     const chev=row.querySelector('.ft-chev'),body=row.querySelector('.ft-body');
     const kw=document.createElement('div');
     kw.className='ft-kids'+(isOpen?' open':'');
@@ -757,7 +760,7 @@ function buildFDOpts(dd,pid,depth,selId){
   childFolders(pid).forEach(f=>{
     const o=document.createElement('div');
     o.className='fd-opt'+(f.id===selId?' act':'');
-    o.innerHTML=`<span class="dot"></span>${'\u00a0'.repeat(depth*3)}${f.name}`;
+    o.innerHTML=`<span class="dot"></span>${'\u00a0'.repeat(depth*3)}${esc(f.name)}`;
     o.onclick=()=>pickFD(dd.id.replace('-fd-dd',''),f.id,f.name);
     dd.appendChild(o);buildFDOpts(dd,f.id,depth+1,selId);
   });
@@ -825,15 +828,15 @@ function ctxExport(){
   function buildDLSub(pid,indent){
     const pad=' '.repeat(indent);let html='';
     childFolders(pid).forEach(sf=>{
-      html+=`${pad}<DT><H3>${sf.name}</H3>\n${pad}<DL><p>\n`;
+      html+=`${pad}<DT><H3>${esc(sf.name)}</H3>\n${pad}<DL><p>\n`;
       html+=buildDLSub(sf.id,indent+4);
-      bookmarks.filter(b=>b.folder===sf.id).forEach(b=>{html+=`${pad}    <DT><A HREF="${b.url}" ADD_DATE="${Math.floor(b.added/1000)}"${b.tags?.length?' TAGS="'+b.tags.join(',')+'"':''}>${b.title}</A>\n`});
+      bookmarks.filter(b=>b.folder===sf.id).forEach(b=>{html+=`${pad}    <DT><A HREF="${esc(b.url)}" ADD_DATE="${Math.floor(b.added/1000)}"${b.tags?.length?' TAGS="'+esc(b.tags.join(','))+'"':''}>${esc(b.title)}</A>\n`});
       html+=`${pad}</DL><p>\n`;
     });return html;
   }
   const pad='    ';let body=buildDLSub(fid,8);
-  bookmarks.filter(b=>b.folder===fid).forEach(b=>{body+=`${pad}    <DT><A HREF="${b.url}" ADD_DATE="${Math.floor(b.added/1000)}"${b.tags?.length?' TAGS="'+b.tags.join(',')+'"':''}>${b.title}</A>\n`});
-  const html=`<!DOCTYPE NETSCAPE-Bookmark-file-1>\n<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">\n<TITLE>Bookmarks - ${f.name}</TITLE>\n<H1>${f.name}</H1>\n<DL><p>\n${pad}<DT><H3>${f.name}</H3>\n${pad}<DL><p>\n${body}${pad}</DL><p>\n</DL><p>`;
+  bookmarks.filter(b=>b.folder===fid).forEach(b=>{body+=`${pad}    <DT><A HREF="${esc(b.url)}" ADD_DATE="${Math.floor(b.added/1000)}"${b.tags?.length?' TAGS="'+esc(b.tags.join(','))+'"':''}>${esc(b.title)}</A>\n`});
+  const html=`<!DOCTYPE NETSCAPE-Bookmark-file-1>\n<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">\n<TITLE>Bookmarks - ${esc(f.name)}</TITLE>\n<H1>${esc(f.name)}</H1>\n<DL><p>\n${pad}<DT><H3>${esc(f.name)}</H3>\n${pad}<DL><p>\n${body}${pad}</DL><p>\n</DL><p>`;
   const a=document.createElement('a');a.href='data:text/html;charset=utf-8,'+encodeURIComponent(html);a.download=`bookmarks-${f.name}.html`;a.click();
 }
 
@@ -846,7 +849,7 @@ function renderCounts(){
 function renderTags(){
   const el=document.getElementById('tags-list'),tags=allTags();
   if(!tags.length){el.innerHTML='<span style="font-size:11px;color:var(--ov0)">No tags yet</span>';return}
-  el.innerHTML=tags.map(t=>`<span class="tc${activeTag===t?' act':''}" onclick="setTag('${t}')">${t}</span>`).join('');
+  el.innerHTML=tags.map(t=>`<span class="tc${activeTag===t?' act':''}" onclick="setTag('${esc(t)}')">${esc(t)}</span>`).join('');
 }
 function renderTree(){
   const el=document.getElementById('folder-tree');el.innerHTML='';
@@ -906,23 +909,23 @@ function setupVS(){
 }
 function mkCard(b,animate){
   const fc=domn(b.url).charAt(0).toUpperCase()||'?';
-  const tags=(b.tags||[]).map(t=>`<span class="ctag">${t}</span>`).join('');
-  const qo=prefs.showQO?`<div class="ab qo" onclick="event.stopPropagation();window.open('${b.url}','_blank')" title="Open link">${LI}</div>`:'';
-  const pinBtn=prefs.showPin?`<div class="ab${b.pinned?' pin-on':''}" onclick="event.stopPropagation();togglePin('${b.id}')" title="${b.pinned?'Unpin':'Pin to top'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>`:'';
+  const tags=(b.tags||[]).map(t=>`<span class="ctag">${esc(t)}</span>`).join('');
+  const qo=prefs.showQO?`<div class="ab qo" onclick="event.stopPropagation();safeOpen('${esc(b.url)}')" title="Open link">${LI}</div>`:'';
+  const pinBtn=prefs.showPin?`<div class="ab${b.pinned?' pin-on':''}" onclick="event.stopPropagation();togglePin('${esc(b.id)}')" title="${b.pinned?'Unpin':'Pin to top'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>`:'';
   const pinBadge=b.pinned?`<svg class="pin-badge" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`:'';
   const d=document.createElement('div');
   d.className='bk'+(animate?' animate-in':'');
   d.dataset.id=b.id;
   d.onclick=()=>{
-    if(prefs.singleClick){window.open(b.url,'_blank');return}
+    if(prefs.singleClick){safeOpen(b.url);return}
     d.classList.remove('popping');void d.offsetWidth;d.classList.add('popping');
     d.addEventListener('animationend',()=>d.classList.remove('popping'),{once:true});
     openDetail(b.id);
   };
   if(dm==='list'){
-    d.innerHTML=`<div class="fav"><img src="${fav(b.url)}" loading="lazy" onerror="this.parentNode.textContent='${fc}'"></div><div class="info"><div class="ttl">${b.title||domn(b.url)}</div><div class="dom">${domn(b.url)}</div></div><div class="tags">${tags}</div><div class="acts">${qo}${pinBtn}<div class="ab" onclick="event.stopPropagation();openIE('${b.id}')" title="Edit">${EI}</div><div class="ab" onclick="event.stopPropagation();delBk('${b.id}')" title="Delete">${DI}</div></div>`;
+    d.innerHTML=`<div class="fav"><img src="${fav(b.url)}" loading="lazy" onerror="this.parentNode.textContent='${esc(fc)}'"></div><div class="info"><div class="ttl">${esc(b.title||domn(b.url))}</div><div class="dom">${esc(domn(b.url))}</div></div><div class="tags">${tags}</div><div class="acts">${qo}${pinBtn}<div class="ab" onclick="event.stopPropagation();openIE('${esc(b.id)}')" title="Edit">${EI}</div><div class="ab" onclick="event.stopPropagation();delBk('${esc(b.id)}')" title="Delete">${DI}</div></div>`;
   }else{
-    d.innerHTML=`${pinBadge}<div class="fav"><img src="${fav(b.url)}" loading="lazy" onerror="this.parentNode.textContent='${fc}'"></div><div class="ttl">${b.title||domn(b.url)}</div><div class="dom">${domn(b.url)}</div><div class="tags">${tags}</div><div class="acts">${qo}${pinBtn}<div class="ab" onclick="event.stopPropagation();openIE('${b.id}')" title="Edit">${EI}</div><div class="ab" onclick="event.stopPropagation();delBk('${b.id}')" title="Delete">${DI}</div></div>`;
+    d.innerHTML=`${pinBadge}<div class="fav"><img src="${fav(b.url)}" loading="lazy" onerror="this.parentNode.textContent='${esc(fc)}'"></div><div class="ttl">${esc(b.title||domn(b.url))}</div><div class="dom">${esc(domn(b.url))}</div><div class="tags">${tags}</div><div class="acts">${qo}${pinBtn}<div class="ab" onclick="event.stopPropagation();openIE('${esc(b.id)}')" title="Edit">${EI}</div><div class="ab" onclick="event.stopPropagation();delBk('${esc(b.id)}')" title="Delete">${DI}</div></div>`;
   }
   return d;
 }
@@ -953,19 +956,19 @@ function render(){
 /* detail */
 function openDetail(id){
   const b=bookmarks.find(x=>x.id===id);if(!b)return;
-  document.getElementById('det-fav').innerHTML=`<img src="${fav(b.url)}" style="width:100%;height:100%;object-fit:cover;border-radius:9px" onerror="this.parentNode.textContent='${domn(b.url).charAt(0).toUpperCase()||'?'}'">`;
+  document.getElementById('det-fav').innerHTML=`<img src="${fav(b.url)}" style="width:100%;height:100%;object-fit:cover;border-radius:9px" onerror="this.parentNode.textContent='${esc(domn(b.url).charAt(0).toUpperCase()||'?')}'">`;
   document.getElementById('det-ttl').textContent=b.title||domn(b.url);
   document.getElementById('det-dom').textContent=domn(b.url);
   let badges='';
-  if(b.folder){const fn=folders.find(f=>f.id===b.folder);if(fn)badges+=`<span class="dbadge folder">${FI} ${fn.name}</span>`}
-  (b.tags||[]).forEach(t=>badges+=`<span class="dbadge tag">${t}</span>`);
+  if(b.folder){const fn=folders.find(f=>f.id===b.folder);if(fn)badges+=`<span class="dbadge folder">${FI} ${esc(fn.name)}</span>`}
+  (b.tags||[]).forEach(t=>badges+=`<span class="dbadge tag">${esc(t)}</span>`);
   document.getElementById('det-meta').innerHTML=badges;
   const dn=document.getElementById('det-notes');
   if(b.notes){dn.textContent=b.notes;dn.style.display='block'}else{dn.style.display='none'}
   document.getElementById('det-acts').innerHTML=`
-    <button class="btn pri" onclick="window.open('${b.url}','_blank')" style="flex:1;justify-content:center">${LI.replace('viewBox','style="width:13px;height:13px" viewBox')} Open link</button>
-    <button class="btn" onclick="closeDetail();openIE('${b.id}')">${EI.replace('viewBox','style="width:13px;height:13px" viewBox')} Edit</button>
-    <button class="btn" onclick="closeDetail();delBk('${b.id}')" style="color:var(--red);border-color:rgba(243,139,168,.3)">${DI.replace('viewBox','style="width:13px;height:13px" viewBox')} Delete</button>`;
+    <button class="btn pri" onclick="safeOpen('${esc(b.url)}')" style="flex:1;justify-content:center">${LI.replace('viewBox','style="width:13px;height:13px" viewBox')} Open link</button>
+    <button class="btn" onclick="closeDetail();openIE('${esc(b.id)}')">${EI.replace('viewBox','style="width:13px;height:13px" viewBox')} Edit</button>
+    <button class="btn" onclick="closeDetail();delBk('${esc(b.id)}')" style="color:var(--red);border-color:rgba(243,139,168,.3)">${DI.replace('viewBox','style="width:13px;height:13px" viewBox')} Delete</button>`;
   document.getElementById('ov-bg').classList.add('open');
 }
 function closeDetail(){
@@ -987,7 +990,7 @@ function openIE(id){
   document.getElementById('ie-fd-label').textContent=fn?fn.name:'No folder';
   document.getElementById('ie-fd-label').className='fd-label'+(fn?'':' ph');
   document.getElementById('ie-tog-pin').className='tog'+(b.pinned?' on':'');
-  const card=document.querySelector(`.bk[data-id="${id}"]`);
+  const card=document.querySelector(`.bk[data-id="${CSS.escape(id)}"]`);
   ieCardRect=card?card.getBoundingClientRect():null;
   const panel=document.getElementById('ie-panel');
   const tw=Math.min(460,innerWidth-32),cx=(innerWidth-tw)/2,cy=(innerHeight-440)/2;
@@ -1025,7 +1028,9 @@ function closeIE(){
 }
 function saveIE(){
   if(!ieId)return;const b=bookmarks.find(x=>x.id===ieId);if(!b)return;
-  b.url=document.getElementById('ie-url').value.trim()||b.url;
+  const newUrl=document.getElementById('ie-url').value.trim()||b.url;
+  if(!safeURL(newUrl)){alert('Only http, https, and ftp URLs are allowed.');document.getElementById('ie-url').focus();return}
+  b.url=newUrl;
   b.title=document.getElementById('ie-title').value.trim()||domn(b.url);
   b.folder=fdSel.ie||null;
   b.tags=document.getElementById('ie-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
@@ -1047,6 +1052,7 @@ function openAdd(){
 function closeModal(){document.getElementById('modal-bg').classList.remove('open')}
 function saveBookmark(){
   const url=document.getElementById('f-url').value.trim();if(!url){document.getElementById('f-url').focus();return}
+  if(!safeURL(url)){alert('Only http, https, and ftp URLs are allowed.');document.getElementById('f-url').focus();return}
   const title=document.getElementById('f-title').value.trim();
   const tags=document.getElementById('f-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
   const notes=document.getElementById('f-notes').value.trim();
@@ -1100,7 +1106,7 @@ function handleFile(file){
         if(h3){walk(sub,ensureF(h3.textContent.trim(),pFid))}
         else if(a){
           const url=a.getAttribute('href');
-          if(!url||url.startsWith('place:')||url.startsWith('javascript:')){skipped++;return}
+          if(!url||!safeURL(url)){skipped++;return}
           /* exact-URL match: refile unfiled existing bookmark if import has a folder */
           const existing=bookmarks.find(b=>b.url===url);
           if(existing){
@@ -1128,14 +1134,14 @@ function exportHTML(){
   function buildDL(pid,indent){
     const pad=' '.repeat(indent);let html='';
     childFolders(pid).forEach(f=>{
-      html+=`${pad}<DT><H3>${f.name}</H3>\n${pad}<DL><p>\n`;
+      html+=`${pad}<DT><H3>${esc(f.name)}</H3>\n${pad}<DL><p>\n`;
       html+=buildDL(f.id,indent+4);
-      bookmarks.filter(b=>b.folder===f.id).forEach(b=>{html+=`${pad}    <DT><A HREF="${b.url}" ADD_DATE="${Math.floor(b.added/1000)}"${b.tags?.length?' TAGS="'+b.tags.join(',')+'"':''}>${b.title}</A>\n`});
+      bookmarks.filter(b=>b.folder===f.id).forEach(b=>{html+=`${pad}    <DT><A HREF="${esc(b.url)}" ADD_DATE="${Math.floor(b.added/1000)}"${b.tags?.length?' TAGS="'+esc(b.tags.join(','))+'"':''}>${esc(b.title)}</A>\n`});
       html+=`${pad}</DL><p>\n`;
     });return html;
   }
   let body=buildDL(null,4);
-  bookmarks.filter(b=>!b.folder).forEach(b=>{body+=`    <DT><A HREF="${b.url}" ADD_DATE="${Math.floor(b.added/1000)}"${b.tags?.length?' TAGS="'+b.tags.join(',')+'"':''}>${b.title}</A>\n`});
+  bookmarks.filter(b=>!b.folder).forEach(b=>{body+=`    <DT><A HREF="${esc(b.url)}" ADD_DATE="${Math.floor(b.added/1000)}"${b.tags?.length?' TAGS="'+esc(b.tags.join(','))+'"':''}>${esc(b.title)}</A>\n`});
   const html=`<!DOCTYPE NETSCAPE-Bookmark-file-1>\n<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">\n<TITLE>Bookmarks</TITLE>\n<H1>Bookmarks</H1>\n<DL><p>\n${body}</DL><p>`;
   const a=document.createElement('a');a.href='data:text/html;charset=utf-8,'+encodeURIComponent(html);a.download='bookmarks.html';a.click();
 }
