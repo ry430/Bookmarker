@@ -445,8 +445,6 @@ body{font-family:var(--font-sans,'Segoe UI',system-ui,sans-serif);font-size:14px
       <h4>Account &amp; Sync</h4>
       <div id="pref-acct-loggedout">
         <div style="font-size:12px;color:var(--sub0);line-height:1.6;margin-bottom:10px">Sign in to sync bookmarks across devices.</div>
-        <div class="field"><label>Supabase Project URL</label><input id="pref-acct-url" type="url" placeholder="https://xxxx.supabase.co" autocomplete="off"></div>
-        <div class="field"><label>Anon / Public Key</label><input id="pref-acct-key" type="password" placeholder="eyJhbGci…" autocomplete="off"></div>
         <div style="height:1px;background:var(--s0);margin:10px 0"></div>
         <div class="field"><label>Email</label><input id="pref-acct-email" type="email" placeholder="you@example.com"></div>
         <div class="field"><label>Password</label><input id="pref-acct-pass" type="password" placeholder="••••••••"></div>
@@ -507,8 +505,6 @@ body{font-family:var(--font-sans,'Segoe UI',system-ui,sans-serif);font-size:14px
     </h3>
     <div id="acct-login">
       <div style="background:rgba(152,181,244,.07);border:1px solid rgba(152,181,244,.15);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:var(--sub0);line-height:1.6">Sign in to sync bookmarks across all your devices in real time. Free Supabase account at <span style="color:var(--accent)">supabase.com</span>.</div>
-      <div class="field"><label>Supabase Project URL</label><input id="acct-url" type="url" placeholder="https://xxxx.supabase.co" autocomplete="off"></div>
-      <div class="field"><label>Anon / Public Key</label><input id="acct-key" type="password" placeholder="eyJhbGci…" autocomplete="off"></div>
       <div style="height:1px;background:var(--s0);margin:12px 0"></div>
       <div class="field"><label>Email</label><input id="acct-email" type="email" placeholder="you@example.com"></div>
       <div class="field"><label>Password</label><input id="acct-pass" type="password" placeholder="••••••••"></div>
@@ -541,59 +537,29 @@ body{font-family:var(--font-sans,'Segoe UI',system-ui,sans-serif);font-size:14px
       <div class="help-step">
         <div class="step-num">1</div>
         <div class="step-body">
-          <div class="step-title">Create a free Supabase account</div>
-          <div class="step-desc">Go to <span style="color:var(--accent)">supabase.com</span> and click <strong style="color:var(--tx)">Start your project</strong>. Sign up with GitHub or email. It's completely free for personal use.</div>
+          <div class="step-title">Create your account</div>
+          <div class="step-desc">Click the account button (circle icon, top right) and choose <strong style="color:var(--tx)">Create account</strong>. Enter your email and password — no other setup needed.</div>
         </div>
       </div>
       <div class="help-step">
         <div class="step-num">2</div>
         <div class="step-body">
-          <div class="step-title">Create a new project</div>
-          <div class="step-desc">Click <strong style="color:var(--tx)">New project</strong>, choose a name (e.g. "bookmarks"), set a database password, and select the region closest to you. Wait ~2 minutes for setup to complete.</div>
+          <div class="step-title">Sign in</div>
+          <div class="step-desc">Enter your email and password, then click <strong style="color:var(--tx)">Sign in</strong>. Your session is saved automatically and changes are pushed to the cloud in real time.</div>
         </div>
       </div>
       <div class="help-step">
         <div class="step-num">3</div>
         <div class="step-body">
-          <div class="step-title">Create the sync table</div>
-          <div class="step-desc">In your project, go to <strong style="color:var(--tx)">SQL Editor</strong> and run this SQL:</div>
-          <div class="step-code">create table bookmark_sync (
-  user_id uuid primary key references auth.users(id),
-  bookmarks text, folders text,
-  updated_at timestamptz default now()
-);
-alter table bookmark_sync enable row level security;
-create policy "own data" on bookmark_sync
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);</div>
+          <div class="step-title">Sync across devices</div>
+          <div class="step-desc">Open this app on another device and sign in with the same email and password. Use <strong style="color:var(--tx)">Push to cloud</strong> to upload and <strong style="color:var(--tx)">Pull from cloud</strong> to download your bookmarks.</div>
         </div>
       </div>
       <div class="help-step">
         <div class="step-num">4</div>
         <div class="step-body">
-          <div class="step-title">Disable email confirmation (recommended)</div>
-          <div class="step-desc">Go to <strong style="color:var(--tx)">Authentication → Settings</strong> and turn off <strong style="color:var(--tx)">Enable email confirmations</strong>. This allows you to sign in immediately after creating an account without verifying your email.</div>
-        </div>
-      </div>
-      <div class="help-step">
-        <div class="step-num">5</div>
-        <div class="step-body">
-          <div class="step-title">Sign in on this device</div>
-          <div class="step-desc">On PC: click the account button (circle icon, top right). On mobile: open <strong style="color:var(--tx)">Prefs → Account &amp; Sync</strong>. Enter your email and password, then click <strong style="color:var(--tx)">Sign in</strong>. First time? Use <strong style="color:var(--tx)">Create account</strong> to register. Once signed in, your session is saved automatically.</div>
-        </div>
-      </div>
-      <div class="help-step">
-        <div class="step-num">6</div>
-        <div class="step-body">
-          <div class="step-title">Sync across devices</div>
-          <div class="step-desc">After signing in, use <strong style="color:var(--tx)">Push to cloud</strong> to upload your bookmarks. On your other devices, open this HTML file in a browser, sign in with the same email and password — your session will be remembered automatically. Use <strong style="color:var(--tx)">Pull from cloud</strong> to download your bookmarks.</div>
-        </div>
-      </div>
-      <div class="help-step">
-        <div class="step-num">7</div>
-        <div class="step-body">
           <div class="step-title">Mobile (iPhone / Android)</div>
-          <div class="step-desc">Save this HTML file to your phone (via iCloud, Google Drive, email, etc.) and open it in Safari or Chrome. Sign in via <strong style="color:var(--tx)">Prefs → Account &amp; Sync</strong>. On iOS, you can add it to your Home Screen via Safari → Share → Add to Home Screen.</div>
+          <div class="step-desc">Save this HTML file to your phone (via iCloud, Google Drive, email, etc.) and open it in Safari or Chrome. Sign in via <strong style="color:var(--tx)">Prefs → Account &amp; Sync</strong>. On iOS, add it to your Home Screen via Safari → Share → Add to Home Screen.</div>
         </div>
       </div>
     </div>
@@ -1238,23 +1204,15 @@ function showLoggedIn(user){
   document.getElementById('acct-loggedin').style.display='block';
 }
 function loadAcctState(){
-  try{
-    const a=localStorage.getItem('bk8acct');
-    if(!a)return;
-    const {url,key}=JSON.parse(a);
-    if(!url||!key)return;
-    initSB(url,key).then(u=>{
-      if(u){showLoggedIn(u);syncPrefAcctUI();syncPull().catch(()=>{})}
-    }).catch(()=>{});
-  }catch(e){}
+  initSB().then(u=>{
+    if(u){showLoggedIn(u);syncPrefAcctUI();syncPull().catch(()=>{})}
+  }).catch(()=>{});
 }
-async function initSB(url,key){
-  if(!url||!key){
-    try{const a=localStorage.getItem('bk8acct');if(a){const p=JSON.parse(a);url=p.url||url;key=p.key||key}}catch(e){}
-  }
-  if(!url||!key)return null;
+const SB_URL='https://ifetjvvqxrlbqthdbiuw.supabase.co';
+const SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlmZXRqdnZxeHJsYnF0aGRiaXV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMTg5MDEsImV4cCI6MjA4OTg5NDkwMX0.3wA_924wTOGm2wmOVLHMLGYn_E_hOaEkQ0Dhi93fLBA';
+async function initSB(){
   const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2');
-  sbClient=createClient(url,key,{auth:{persistSession:true,storageKey:'bk8sb'}});
+  sbClient=createClient(SB_URL,SB_ANON,{auth:{persistSession:true,storageKey:'bk8sb'}});
   const {data:{session}}=await sbClient.auth.getSession();
   return session?.user||null;
 }
@@ -1264,36 +1222,33 @@ function openAcct(){
   else{
     document.getElementById('acct-login').style.display='block';
     document.getElementById('acct-loggedin').style.display='none';
-    try{const a=localStorage.getItem('bk8acct');if(a){const p=JSON.parse(a);if(p.url)document.getElementById('acct-url').value=p.url;if(p.key)document.getElementById('acct-key').value=p.key;if(p.email)document.getElementById('acct-email').value=p.email}}catch(e){}
+    try{const a=localStorage.getItem('bk8acct');if(a){const p=JSON.parse(a);if(p.email)document.getElementById('acct-email').value=p.email}}catch(e){}
   }
   document.getElementById('acct-bg').classList.add('open');
 }
 function closeAcct(){document.getElementById('acct-bg').classList.remove('open')}
 async function acctSignIn(){
-  const url=document.getElementById('acct-url').value.trim(),key=document.getElementById('acct-key').value.trim();
   const email=document.getElementById('acct-email').value.trim(),pass=document.getElementById('acct-pass').value;
   const err=document.getElementById('acct-err');
-  if(!url||!key){err.textContent='Enter Supabase URL and key.';err.style.color='var(--red)';return}
   if(!email||!pass){err.textContent='Enter email and password.';err.style.color='var(--red)';return}
   err.textContent='Connecting…';err.style.color='var(--ov1)';
   try{
-    await initSB(url,key);
+    await initSB();
     const {data,error}=await sbClient.auth.signInWithPassword({email,password:pass});
     if(error){err.textContent=error.message;err.style.color='var(--red)';return}
-    localStorage.setItem('bk8acct',JSON.stringify({url,key,email}));
+    localStorage.setItem('bk8acct',JSON.stringify({email}));
     showLoggedIn(data.user);err.textContent='';
     syncPrefAcctUI();
     await syncPull();
   }catch(e){err.textContent='Failed: '+e.message;err.style.color='var(--red)'}
 }
 async function acctSignUp(){
-  const url=document.getElementById('acct-url').value.trim(),key=document.getElementById('acct-key').value.trim();
   const email=document.getElementById('acct-email').value.trim(),pass=document.getElementById('acct-pass').value;
   const err=document.getElementById('acct-err');
-  if(!url||!key||!email||!pass){err.textContent='Fill in all fields.';err.style.color='var(--red)';return}
+  if(!email||!pass){err.textContent='Enter email and password.';err.style.color='var(--red)';return}
   err.textContent='Creating account…';err.style.color='var(--ov1)';
   try{
-    await initSB(url,key);
+    await initSB();
     const {error}=await sbClient.auth.signUp({email,password:pass});
     if(error){err.textContent=error.message;err.style.color='var(--red)';return}
     err.textContent='Account created! You can now sign in.';err.style.color='var(--grn)';
@@ -1345,33 +1300,30 @@ function syncPrefAcctUI(){
     loggedout.style.display='none';loggedin.style.display='block';
   }else{
     loggedout.style.display='block';loggedin.style.display='none';
-    try{const a=localStorage.getItem('bk8acct');if(a){const p=JSON.parse(a);if(p.url)document.getElementById('pref-acct-url').value=p.url;if(p.key)document.getElementById('pref-acct-key').value=p.key;if(p.email)document.getElementById('pref-acct-email').value=p.email}}catch(e){}
+    try{const a=localStorage.getItem('bk8acct');if(a){const p=JSON.parse(a);if(p.email)document.getElementById('pref-acct-email').value=p.email}}catch(e){}
   }
 }
 async function prefAcctSignIn(){
-  const url=document.getElementById('pref-acct-url').value.trim(),key=document.getElementById('pref-acct-key').value.trim();
   const email=document.getElementById('pref-acct-email').value.trim(),pass=document.getElementById('pref-acct-pass').value;
   const err=document.getElementById('pref-acct-err');
-  if(!url||!key){err.textContent='Enter Supabase URL and key.';err.style.color='var(--red)';return}
   if(!email||!pass){err.textContent='Enter email and password.';err.style.color='var(--red)';return}
   err.textContent='Connecting…';err.style.color='var(--ov1)';
   try{
-    await initSB(url,key);
+    await initSB();
     const {data,error}=await sbClient.auth.signInWithPassword({email,password:pass});
     if(error){err.textContent=error.message;err.style.color='var(--red)';return}
-    localStorage.setItem('bk8acct',JSON.stringify({url,key,email}));
+    localStorage.setItem('bk8acct',JSON.stringify({email}));
     showLoggedIn(data.user);err.textContent='';syncPrefAcctUI();
     await syncPull();
   }catch(e){err.textContent='Failed: '+e.message;err.style.color='var(--red)'}
 }
 async function prefAcctSignUp(){
-  const url=document.getElementById('pref-acct-url').value.trim(),key=document.getElementById('pref-acct-key').value.trim();
   const email=document.getElementById('pref-acct-email').value.trim(),pass=document.getElementById('pref-acct-pass').value;
   const err=document.getElementById('pref-acct-err');
-  if(!url||!key||!email||!pass){err.textContent='Fill in all fields.';err.style.color='var(--red)';return}
+  if(!email||!pass){err.textContent='Enter email and password.';err.style.color='var(--red)';return}
   err.textContent='Creating account…';err.style.color='var(--ov1)';
   try{
-    await initSB(url,key);
+    await initSB();
     const {error}=await sbClient.auth.signUp({email,password:pass});
     if(error){err.textContent=error.message;err.style.color='var(--red)';return}
     err.textContent='Account created! You can now sign in.';err.style.color='var(--grn)';
