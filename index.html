@@ -139,6 +139,15 @@ body{font-family:var(--font-sans,'Segoe UI',system-ui,sans-serif);font-size:14px
 #bk-grid.list .bk .ttl{margin-bottom:1px;overflow-wrap:break-word;word-break:break-word}
 #bk-grid.list .bk .dom{margin-bottom:0}
 #bk-grid.list .bk .tags{flex-wrap:nowrap;overflow:hidden}
+/* folder search-result card */
+.fcard{background:transparent;border:1px solid var(--s0);border-radius:11px;padding:13px 14px;cursor:pointer;transition:border-color calc(.15s/var(--spd)) var(--ease-ui),background calc(.15s/var(--spd)) var(--ease-ui),transform calc(.18s/var(--spd)) var(--ease-enter);display:flex;flex-direction:column;gap:6px;min-width:0}
+.fcard:hover{border-color:var(--accent);background:var(--s0);transform:translateY(-2px)}
+.fcard .fci{color:var(--accent);display:flex}
+.fcard .fcname{font-size:13px;font-weight:500;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fcard .fcmeta{font-size:11px;color:var(--ov1);display:flex;align-items:center;gap:5px}
+#bk-grid.list .fcard{flex-direction:row;align-items:center;padding:9px 13px;border-radius:8px}
+#bk-grid.list .fcard:hover{transform:translateX(3px)}
+#bk-grid.list .fcard .fcname{flex:1}
 .empty{text-align:center;padding:52px 20px;color:var(--ov0);font-size:13px}
 .empty svg{width:32px;height:32px;margin-bottom:10px;opacity:.35;color:var(--accent);display:block;margin-inline:auto}
 /* load-more sentinel */
@@ -193,6 +202,9 @@ body{font-family:var(--font-sans,'Segoe UI',system-ui,sans-serif);font-size:14px
 .fd-dd{position:absolute;top:calc(100% + 5px);left:0;right:0;background:var(--mantle);border:1px solid var(--s1);border-radius:10px;padding:4px;z-index:60;opacity:0;transform:translateY(-5px) scale(.97);pointer-events:none;transition:opacity calc(.15s/var(--spd)) var(--ease-ui),transform calc(.15s/var(--spd)) var(--ease-enter);max-height:200px;overflow-y:auto;box-shadow:0 8px 20px rgba(0,0,0,.3)}
 .fd-dd.open{opacity:1;transform:none;pointer-events:auto}
 .fd-opt{padding:7px 12px;border-radius:7px;font-size:13px;color:var(--sub1);cursor:pointer;transition:background calc(.1s/var(--spd)),color calc(.1s/var(--spd));display:flex;align-items:center;gap:8px}
+.fd-search{width:100%;margin-bottom:3px;padding:6px 9px;border-radius:7px;border:1px solid var(--s1);background:var(--s0);color:var(--tx);font-size:12px;font-family:inherit;outline:none;transition:border-color calc(.15s/var(--spd)) var(--ease-ui)}
+.fd-search::placeholder{color:var(--ov0)}
+.fd-search:focus{border-color:var(--accent)}
 .fd-opt:hover{background:var(--s0);color:var(--tx)}
 .fd-opt.act{color:var(--accent);font-weight:500}
 .fd-opt .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);opacity:0;transition:opacity calc(.12s/var(--spd));flex-shrink:0}
@@ -353,7 +365,7 @@ body{font-family:var(--font-sans,'Segoe UI',system-ui,sans-serif);font-size:14px
       </div>
       <button class="btn btn-imp" onclick="openImport()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>Import</span></button>
       <button class="btn btn-exp" onclick="exportHTML()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span>Export</span></button>
-      <button class="btn btn-pref" onclick="openPref()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Prefs</span></button>
+      <button class="btn btn-pref" onclick="openPref()" title="Preferences"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
       <button class="btn pri btn-add" onclick="openAdd()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add</button>
       <div id="acct-btn" onclick="openAcct()"><div id="acct-avatar"></div></div>
     </div>
@@ -623,11 +635,25 @@ function save(){
 function applyPrefs(){
   const R=document.documentElement.style;
   R.setProperty('--base',prefs.bgColor);
-  R.setProperty('--mantle',adj(prefs.bgColor,-5));
-  R.setProperty('--crust',adj(prefs.bgColor,-10));
   R.setProperty('--accent',prefs.acColor);
   R.setProperty('--blue',prefs.acColor);
   R.setProperty('--cols',prefs.cols);
+  /* foreground/UI colors — auto-switch on background luminance so light themes keep readable contrast */
+  const light=isLightColor(prefs.bgColor);
+  const fg=light?{
+    '--s0':'#E6E9EF','--s1':'#CCD0DA','--s2':'#ACB0BE',
+    '--ov0':'#8C8FA1','--ov1':'#7C7F93',
+    '--tx':'#4C4F69','--sub1':'#5C5F77','--sub0':'#6C6F85',
+    '--lav':'#7287FD','--mantle':'#E6E9EF','--crust':'#DCE0E8',
+    '--grn':'#40A02B','--red':'#D20F39','--mauve':'#8839EF'
+  }:{
+    '--s0':'#313244','--s1':'#45475A','--s2':'#585B70',
+    '--ov0':'#6C7086','--ov1':'#7F849C',
+    '--tx':'#CDD6F4','--sub1':'#BAC2DE','--sub0':'#A6ADC8',
+    '--lav':'#B4BEFE','--mantle':adj(prefs.bgColor,-5),'--crust':adj(prefs.bgColor,-10),
+    '--grn':'#A6E3A1','--red':'#F38BA8','--mauve':'#CBA6F7'
+  };
+  for(const k in fg)R.setProperty(k,fg[k]);
   const spd=prefs.reduceMotion?999:prefs.animSpeed;
   R.setProperty('--spd',spd);
   /* easing */
@@ -646,6 +672,11 @@ function applyPrefs(){
   ['ov-bg','modal-bg','import-bg','pref-bg','acct-bg','help-bg'].forEach(id=>{
     document.getElementById(id)?.classList.toggle(blurClass,!!prefs.blurEnabled);
   });
+}
+function isLightColor(hex){
+  if(!hex||!hex.startsWith('#')||hex.length<7)return false;
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return(0.299*r+0.587*g+0.114*b)>150;
 }
 function adj(hex,d){
   let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
@@ -756,14 +787,31 @@ function buildTree(pid,depth,container){
   });
   container.appendChild(wrap);
 }
-function buildFDOpts(dd,pid,depth,selId){
+function buildFDOpts(dd,pid,depth,selId,q){
   childFolders(pid).forEach(f=>{
+    if(q&&!f.name.toLowerCase().includes(q)){ /* keep searching descendants for matches */
+      buildFDOpts(dd,f.id,depth+1,selId,q);return;
+    }
     const o=document.createElement('div');
     o.className='fd-opt'+(f.id===selId?' act':'');
     o.innerHTML=`<span class="dot"></span>${'\u00a0'.repeat(depth*3)}${esc(f.name)}`;
     o.onclick=()=>pickFD(dd.id.replace('-fd-dd',''),f.id,f.name);
-    dd.appendChild(o);buildFDOpts(dd,f.id,depth+1,selId);
+    dd.appendChild(o);buildFDOpts(dd,f.id,depth+1,selId,q);
   });
+}
+function buildFDList(pfx){
+  const dd=document.getElementById(pfx+'-fd-dd');
+  if(!dd)return;
+  const q=(document.getElementById(pfx+'-fd-search')?.value||'').toLowerCase().trim();
+  dd.querySelectorAll('.fd-opt').forEach(x=>x.remove());
+  if(!q){
+    const no=document.createElement('div');
+    no.className='fd-opt'+(fdSel[pfx]===null?' act':'');
+    no.innerHTML='<span class="dot"></span>No folder';
+    no.onclick=()=>pickFD(pfx,null,'No folder');
+    dd.appendChild(no);
+  }
+  buildFDOpts(dd,null,0,fdSel[pfx],q);
 }
 function toggleFD(pfx){
   const btn=document.getElementById(pfx+'-fd-btn'),dd=document.getElementById(pfx+'-fd-dd');
@@ -772,13 +820,16 @@ function toggleFD(pfx){
   document.querySelectorAll('.fd-btn.open').forEach(x=>x.classList.remove('open'));
   if(opening){
     dd.innerHTML='';
-    const no=document.createElement('div');
-    no.className='fd-opt'+(fdSel[pfx]===null?' act':'');
-    no.innerHTML='<span class="dot"></span>No folder';
-    no.onclick=()=>pickFD(pfx,null,'No folder');
-    dd.appendChild(no);
-    buildFDOpts(dd,null,0,fdSel[pfx]);
+    const sw=document.createElement('input');
+    sw.type='text';sw.id=pfx+'-fd-search';sw.placeholder='Search folders…';
+    sw.className='fd-search';
+    sw.addEventListener('click',e=>e.stopPropagation());
+    sw.addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation();dd.classList.remove('open');btn.classList.remove('open')}});
+    sw.oninput=()=>buildFDList(pfx);
+    dd.appendChild(sw);
+    buildFDList(pfx);
     dd.classList.add('open');btn.classList.add('open');
+    setTimeout(()=>sw.focus(),0);
   }
 }
 function pickFD(pfx,id,label){
@@ -929,6 +980,19 @@ function mkCard(b,animate){
   }
   return d;
 }
+function mkFolderCard(f){
+  const n=cntBelow(f.id);
+  const d=document.createElement('div');
+  d.className='fcard';
+  d.innerHTML=`<div class="fci">${FI}</div><div class="fcname">${esc(f.name)}</div><div class="fcmeta">${n} bookmark${n!==1?'s':''} <span style="opacity:.7">·</span> Open folder</div>`;
+  d.onclick=()=>{
+    view='folder:'+f.id;activeTag=null;
+    document.querySelectorAll('.ni,.ft-row').forEach(x=>x.classList.remove('act'));
+    document.getElementById('vlabel').textContent=f.name;
+    closeMobSb();render();
+  };
+  return d;
+}
 function appendCards(slice,animate){
   const grid=document.getElementById('bk-grid');
   const frag=document.createDocumentFragment();
@@ -943,14 +1007,21 @@ function render(){
   const grid=document.getElementById('bk-grid');
   grid.className=dm==='list'?'list':'';
   grid.innerHTML='';
+  /* show folders matching the top search query, above bookmark results */
+  const q=(document.getElementById('srch').value||'').toLowerCase().trim();
+  let folderHits=[];
+  if(q){
+    folderHits=folders.filter(f=>f.name.toLowerCase().includes(q));
+    if(view.startsWith('folder:'))folderHits=folderHits.filter(f=>f.id!==view.slice(7));
+  }
+  folderHits.forEach(f=>grid.appendChild(mkFolderCard(f)));
   document.getElementById('rcount').textContent=vsFiltered.length+' item'+(vsFiltered.length!==1?'s':'');
-  if(!vsFiltered.length){
+  if(!vsFiltered.length&&!folderHits.length){
     grid.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><div>No bookmarks found</div></div>`;
     return;
   }
   /* render first page with stagger animation, rest loaded on scroll */
-  appendCards(vsFiltered.slice(0,PAGE),true);
-  setupVS();
+  if(vsFiltered.length){appendCards(vsFiltered.slice(0,PAGE),true);setupVS();}
 }
 
 /* detail */
@@ -1044,9 +1115,13 @@ function openAdd(){
   editId=null;
   document.getElementById('modal-title').textContent='Add bookmark';
   ['f-url','f-title','f-tags','f-notes'].forEach(id=>document.getElementById(id).value='');
-  fdSel.modal=null;
-  document.getElementById('modal-fd-label').textContent='No folder';
-  document.getElementById('modal-fd-label').className='fd-label ph';
+  /* auto-select the folder currently being viewed */
+  const curFid=view.startsWith('folder:')?view.slice(7):null;
+  const curF=curFid?folders.find(f=>f.id===curFid):null;
+  fdSel.modal=curFid;
+  const lbl=document.getElementById('modal-fd-label');
+  lbl.textContent=curF?curF.name:'No folder';
+  lbl.className='fd-label'+(curF?'':' ph');
   document.getElementById('modal-bg').classList.add('open');
 }
 function closeModal(){document.getElementById('modal-bg').classList.remove('open')}
