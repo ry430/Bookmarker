@@ -45,9 +45,13 @@ body{font-family:var(--font-sans,'Segoe UI',system-ui,sans-serif);font-size:14px
 .ni.act .ct{background:rgba(152,181,244,.18);color:var(--accent)}
 
 /* folder tree */
-.ft-row{display:flex;align-items:center;cursor:pointer;border-radius:7px;margin:1px 6px;transition:background calc(.12s/var(--spd)) var(--ease-ui);user-select:none;overflow:hidden}
+.ft-row{display:flex;align-items:center;cursor:pointer;border-radius:7px;margin:1px 6px;transition:background calc(.12s/var(--spd)) var(--ease-ui);user-select:none;overflow:hidden;position:relative}
 .ft-row:hover{background:var(--s0)}
 .ft-row.act{background:rgba(152,181,244,.13)}
+/* sibling-reorder drop indicator lines (top/bottom of a row) */
+.ft-row.drop-before::before,.ft-row.drop-after::after{content:'';position:absolute;left:8px;right:8px;height:2px;border-radius:2px;background:var(--accent);opacity:0;box-shadow:0 0 0 1px rgba(0,0,0,.15);pointer-events:none;z-index:2}
+.ft-row.drop-before::before{top:0;opacity:1}
+.ft-row.drop-after::after{bottom:0;opacity:1}
 .ft-chev{width:20px;height:30px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--ov0);transition:transform calc(.3s/var(--spd)) var(--ease-enter)}
 .ft-chev.open{transform:rotate(90deg)}
 .ft-chev svg{width:10px;height:10px}
@@ -755,29 +759,61 @@ function buildTree(pid,depth,container){
     row.addEventListener('touchstart',e=>{longTmr=setTimeout(()=>{const t=e.touches[0];showCtx(t.clientX,t.clientY,f.id)},600)},{passive:true});
     row.addEventListener('touchend',()=>clearTimeout(longTmr));
     row.addEventListener('touchmove',()=>clearTimeout(longTmr));
-    /* drag-and-drop for folder reordering */
+    /* drag-and-drop: drop on the middle of a row nests it; drop on the top/bottom
+       edge shows a line and reorders the folder among its siblings */
     row.setAttribute('draggable','true');
     row.dataset.fid=f.id;
     row.addEventListener('dragstart',e=>{
       e.dataTransfer.setData('text/plain',f.id);
       e.dataTransfer.effectAllowed='move';
+      document.querySelectorAll('.ft-row').forEach(r=>r.classList.remove('dragging','drag-over','drop-before','drop-after'));
       setTimeout(()=>row.classList.add('dragging'),0);
     });
-    row.addEventListener('dragend',()=>row.classList.remove('dragging'));
+    row.addEventListener('dragend',()=>document.querySelectorAll('.ft-row').forEach(r=>r.classList.remove('dragging','drag-over','drop-before','drop-after')));
+    const clearDropState=()=>document.querySelectorAll('.ft-row').forEach(r=>r.classList.remove('drag-over','drop-before','drop-after'));
     row.addEventListener('dragover',e=>{
       e.preventDefault();e.dataTransfer.dropEffect='move';
-      document.querySelectorAll('.ft-row.drag-over').forEach(r=>r.classList.remove('drag-over'));
-      row.classList.add('drag-over');
+      clearDropState();
+      const rect=row.getBoundingClientRect();
+      const rel=e.clientY-rect.top;
+      if(rel<rect.height*0.3)row.classList.add('drop-before');
+      else if(rel>rect.height*0.7)row.classList.add('drop-after');
+      else row.classList.add('drag-over');
     });
-    row.addEventListener('dragleave',e=>{if(!row.contains(e.relatedTarget))row.classList.remove('drag-over')});
+    row.addEventListener('dragleave',e=>{if(!row.contains(e.relatedTarget))row.classList.remove('drag-over','drop-before','drop-after')});
     row.addEventListener('drop',e=>{
-      e.preventDefault();row.classList.remove('drag-over');
+      e.preventDefault();clearDropState();
       const dragId=e.dataTransfer.getData('text/plain');
       if(!dragId||dragId===f.id)return;
-      /* prevent dropping a folder into its own descendant */
+      /* prevent moving a folder into its own descendant */
       if(belowIds(dragId).includes(f.id))return;
       const dragged=folders.find(x=>x.id===dragId);
       if(!dragged)return;
+      const rect=row.getBoundingClientRect();
+      const rel=e.clientY-rect.top;
+      if(rel<rect.height*0.3){ /* sibling reorder: place BEFORE target, same level */
+        dragged.parentId=f.parentId??null;
+        const di=folders.findIndex(x=>x.id===dragId);
+        const ti=folders.findIndex(x=>x.id===f.id);
+        if(di>=0&&ti>=0&&di!==ti){
+          const [it]=folders.splice(di,1);
+          const nt=folders.findIndex(x=>x.id===f.id);
+          if(nt>=0)folders.splice(nt,0,it);
+        }
+        save();render();return;
+      }
+      if(rel>rect.height*0.7){ /* sibling reorder: place AFTER target, same level */
+        dragged.parentId=f.parentId??null;
+        const di=folders.findIndex(x=>x.id===dragId);
+        const ti=folders.findIndex(x=>x.id===f.id);
+        if(di>=0&&ti>=0&&di!==ti){
+          const [it]=folders.splice(di,1);
+          const nt=folders.findIndex(x=>x.id===f.id);
+          if(nt>=0)folders.splice(nt+1,0,it);
+        }
+        save();render();return;
+      }
+      /* middle: nest as a child */
       dragged.parentId=f.id;
       folderOpen[f.id]=true;
       save();render();
